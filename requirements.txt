@@ -1,32 +1,27 @@
-# requirements.txt
+ # requirements.txt
 
-# Django and ecosystem
-Django
-django-crontab
-django-allauth
-djangorestframework
-django-cors-headers
-django-tailwind
-whitenoise
+ # Django and ecosystem
+ Django
+ django-crontab
+ django-allauth
+ djangorestframework
+ django-cors-headers
+ django-tailwind
+ whitenoise
 
-# Scraping & parsing
-requests
-beautifulsoup4
-yt-dlp
+ # Scraping & parsing
+ requests
+ beautifulsoup4
+ yt-dlp
 
-# Configuration
-python-dotenv
+ # Configuration
+ python-dotenv
+ # Utilities (loose pins, latest allowed)
+ accelerate
+ aioquic
+ numpy
+ pandas
+ psycopg2-binary
+ gunicorn
 
-# NLP / spaCy
-spacy
-ja_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/ja_core_news_sm-3.8.0/ja_core_news_sm-3.8.0-py3-none-any.whl
-
-# Utilities (loose pins, latest allowed)
-accelerate
-aioquic
-numpy
-pandas
-psycopg2-binary
-gunicorn
-
-# Add other dependencies here as needed without strict version pins
+ # Add other dependencies here as needed without strict version pins
