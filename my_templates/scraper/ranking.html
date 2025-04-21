@@ -1,0 +1,55 @@
+{% extends "scraper/../base.html" %}
+
+{% block title %}ランキング{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h1>ランキング</h1>
+
+  <!-- タブメニュー -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link {% if current_period == '24h' %}active{% endif %}"
+         href="{% url 'video_ranking' %}?period=24h">
+        24時間
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_period == '1w' %}active{% endif %}"
+         href="{% url 'video_ranking' %}?period=1w">
+        1週間
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_period == '1m' %}active{% endif %}"
+         href="{% url 'video_ranking' %}?period=1m">
+        1ヶ月
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link {% if current_period == '1y' %}active{% endif %}"
+         href="{% url 'video_ranking' %}?period=1y">
+        1年
+      </a>
+    </li>
+  </ul>
+
+  <!-- ランキングのリスト表示 -->
+  <div class="row row-cols-2 row-cols-md-3 g-4">
+    {% for video in ranking %}
+      <div class="col">
+        <div class="card h-100">
+          <a href="{% url 'video_detail' video.disp_id %}">
+            <img src="{{ video.thumb_url }}"
+                 class="card-img-top"
+                 alt="{{ video.alt_text }}"
+                 onerror="this.style.display='none';">
+          </a>
+        </div>
+      </div>
+    {% empty %}
+      <p>この期間に表示された動画はありません。</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

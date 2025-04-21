@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Twitter動画保存{% endblock %}
+
+{% block content %}
+  <h2 class="mb-4">Twitter の動画を保存する</h2>
+
+  <form method="post" class="mb-4">
+    {% csrf_token %}
+    <div class="input-group">
+      <input
+        type="text"
+        name="param"
+        class="form-control"
+        placeholder="ここに Twitter 動画の URL をペースト"
+        value="{{ tweet_url }}"
+      >
+      <button class="btn btn-primary" type="submit">抽出</button>
+    </div>
+  </form>
+
+  {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+  {% endif %}
+
+  {% if video_url %}
+    <div class="mb-3">
+      <a href="{{ video_url }}" download class="btn btn-success">
+        ↓ このリンクを長押し or 右クリックで保存 ↓
+      </a>
+    </div>
+    <video controls class="img-fluid rounded">
+      <source src="{{ video_url }}" type="video/mp4">
+      お使いのブラウザでは動画タグがサポートされていません。
+    </video>
+  {% endif %}
+{% endblock %}

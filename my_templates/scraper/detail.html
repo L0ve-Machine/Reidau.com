@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Video {{ video.disp_id }}{% endblock %}
+
+{% block content %}
+  <!-- 上部広告：APOLLOバナー -->
+  <div class="text-center my-4">
+    <a href="https://appollo.jp/api/lp/?acd=PLW7x94FoqGHEoOsviFTUQ&title=" target="_blank" rel="noopener noreferrer">
+      <img src="https://appollo.jp/api/bn/?acd=PLW7x94FoqGHEoOsviFTUQ&banner_type=2&device_type=0"
+           class="img-fluid"
+           alt="APOLLO広告">
+    </a>
+    <img src="https://appollo.jp/api/imp/?acd=PLW7x94FoqGHEoOsviFTUQ&device_type=" width="1" height="1" alt="">
+  </div>
+
+  <!-- メインコンテンツ -->
+  <h2 class="mb-3">Click the link below to view the video:</h2>
+  <p style="word-break:break-word;">
+    <strong>
+      <a href="{{ video.redirect_url }}" target="_blank">{{ video.redirect_url }}</a>
+    </strong>
+  </p>
+  <p class="text-muted" style="font-size:x-small; word-break:break-word;">
+    <a href="{{ video.thumb_url }}" target="_blank">{{ video.thumb_url }}</a>
+  </p>
+
+  <!-- 下部広告：マッチングアフィ -->
+  <div class="text-center my-4">
+    <a href="https://matching-affi.jp/link.php?i=phzgmua7t6sd&m=mhylbfa7216n" target="_blank" rel="noopener noreferrer">
+      自由テキスト広告はこちら
+    </a>
+    <img src="https://matching-affi.jp/data.php?i=phzgmua7t6sd&m=mhylbfa7216n"
+         width="1" height="1" alt="">
+  </div>
+{% endblock %}
+

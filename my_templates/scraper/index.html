@@ -1,0 +1,30 @@
+{% extends "scraper/../base.html" %}
+
+{% block title %}動画一覧{% endblock %}
+
+{% block content %}
+  <div class="row row-cols-2 row-cols-md-3 g-4">
+    {% for video in videos %}
+      {% if video.ad %}
+        <!-- 広告が含まれている場合、広告を表示 -->
+        <div class="col-12 my-3">
+          <a href="https://matching-affi.jp/link.php?i=phzgmua7t6sd&m=mhylbfa7216n">
+            自由テキスト広告
+          </a>
+          <img src="https://matching-affi.jp/data.php?i=phzgmua7t6sd&m=mhylbfa7216n" width="1" height="1" />
+        </div>
+      {% else %}
+        <!-- 動画情報の表示 -->
+        <div class="col">
+          <div class="card h-100">
+            <a href="{% url 'video_detail' video.disp_id %}">
+              <img src="{{ video.thumb_url }}" class="card-img-top" alt="{{ video.alt_text }}" onerror="this.style.display='none';">
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    {% empty %}
+      <p>動画が見つかりませんでした。</p>
+    {% endfor %}
+  </div>
+{% endblock %}
