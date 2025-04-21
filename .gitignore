@@ -1,0 +1,20 @@
+.env
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Django / SQLite
+db.sqlite3
+*.log
+
+# Virtualenv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
