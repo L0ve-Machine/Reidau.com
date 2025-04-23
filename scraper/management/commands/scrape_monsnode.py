@@ -1,56 +1,102 @@
-# scraper/management/commands/scrape_monsnode.py
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
+from urllib.parse import urlparse
 from scraper.models import Video
 
 class Command(BaseCommand):
-    help = 'Scrape monsnode.com and save only new videos'
+    help = 'Infinite-scroll scrape + skip duplicates in one run'
 
     def handle(self, *args, **options):
-        base_url = 'https://monsnode.com/'
-        existing_ids = set(Video.objects.values_list('disp_id', flat=True))
-        page = 0
+        base_url = 'https://www.twidouga.net/jp/realtime_t1.php'
+        page_tpl = base_url + '?page={}'
+        scraper = cloudscraper.create_scraper(
+            browser={'browser':'chrome','platform':'windows','mobile':False}
+        )
 
-        while True:
-            url = base_url if page == 0 else f"{base_url}?page={page}"
-            resp = requests.get(url)
+        all_items = []
+        # 1ページ目
+        resp = scraper.get(base_url, timeout=10)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        container = soup.find('div', id='container')
+        if container:
+            all_items.extend(container.find_all('div', class_='item'))
+
+        # ページ 2～MAX を取得
+        MAX_PAGES = 20
+        for page in range(2, MAX_PAGES+1):
+            resp = scraper.get(page_tpl.format(page), timeout=10)
             if resp.status_code != 200:
-                self.stdout.write(self.style.ERROR(f'Failed to fetch page {page}: {resp.status_code}'))
                 break
-
-            soup  = BeautifulSoup(resp.text, 'html.parser')
-            items = soup.find_all('div', class_='listn')
+            soup = BeautifulSoup(resp.text, 'html.parser')
+            items = soup.find_all('div', class_='item')
             if not items:
                 break
+            all_items.extend(items)
 
-            new_found = False
-            for item in items:
-                disp_id = item['id']
-                if disp_id in existing_ids:
-                    continue
+        self.stdout.write(f'Total raw items: {len(all_items)}')
 
-                href = item.find('a', rel='nofollow')['href']
-                redirect_url = href if href.startswith('http') else requests.compat.urljoin(base_url, href)
-                img  = item.find('img')
-                thumb = img['src']
-                alt   = img.get('alt', '')
-                user  = item.find('div', class_='user').get_text(strip=True)
+        seen = set()
+        created, updated = 0, 0
 
-                Video.objects.create(
-                    disp_id=disp_id,
-                    user=user,
-                    redirect_url=redirect_url,
-                    thumb_url=thumb,
-                    alt_text=alt,
-                )
-                existing_ids.add(disp_id)
-                new_found = True
-                self.stdout.write(self.style.SUCCESS(f'Created: {disp_id}'))
+        for idx, item in enumerate(all_items, start=1):
+            # — disp_id を決定 —
+            # 元ツイート URL があればそちらの ID、なければ動画 URL をそのまま
+            tweet_link = item.find('div', class_='saisei')
+            if tweet_link and tweet_link.a:
+                disp_id = tweet_link.a['href'].rstrip('/').split('/')[-1]
+            else:
+                # 動画 URL を探して取ってくる（.mp4?tag=… でもマッチ）
+                video_href = ''
+                for a in item.find_all('a'):
+                    href = a.get('href','').strip()
+                    if 'video.twimg.com' in href and '.mp4' in href:
+                        video_href = href
+                        break
+                disp_id = video_href
 
-            if not new_found:
-                # このページで新規がなければ以降も新規は出ないと判断して終了
-                break
-            page += 1
+            # ―― すでに出現済みならスキップ ――
+            if not disp_id or disp_id in seen:
+                continue
+            seen.add(disp_id)
 
-        self.stdout.write(self.style.SUCCESS('Scraping done.'))
+            # ―― 以降は元の保存ロジックをそのまま ――
+            # video_url, thumb_url, tweet_url を抽出
+            video_url = ''
+            for a in item.find_all('a'):
+                href = a.get('href','').strip()
+                if 'video.twimg.com' in href and '.mp4' in href:
+                    video_url = href
+                    break
+            if not video_url:
+                continue
+
+            thumb_url = ''
+            img = item.find('img')
+            if img and img.get('src'):
+                thumb_url = img['src'].strip()
+
+            tweet_url = ''
+            saisei = item.find('div', class_='saisei')
+            if saisei and saisei.a:
+                tweet_url = saisei.a['href'].strip()
+
+            obj, was_created = Video.objects.update_or_create(
+                disp_id=disp_id,
+                defaults={
+                    'redirect_url': video_url,
+                    'thumb_url':    thumb_url,
+                    'alt_text':     '',
+                    'tweet_url':    tweet_url,
+                    'user':         '',
+                }
+            )
+            if was_created:
+                created += 1
+            else:
+                updated += 1
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Done. Created: {created}, Updated: {updated}'
+        ))

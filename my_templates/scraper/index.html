@@ -5,24 +5,32 @@
 {% block content %}
   <div class="row row-cols-2 row-cols-md-3 g-4">
     {% for video in videos %}
-      {% if video.ad %}
-        <!-- 広告が含まれている場合、広告を表示 -->
-        <div class="col-12 my-3">
-          <a href="https://matching-affi.jp/link.php?i=phzgmua7t6sd&m=mhylbfa7216n">
-            自由テキスト広告
+      <div class="col">
+        <div class="listn" id="{{ video.disp_id }}">
+          <a href="{% url 'video_detail' video.disp_id %}">
+            {% if video.uploaded_file %}
+              <!-- アップロード動画は <video> タグで再生 -->
+              <video controls class="img-fluid rounded" style="width:100%; height:auto;">
+                <source src="{{ video.uploaded_file.url }}" type="video/mp4">
+                お使いのブラウザは video タグに対応していません。
+              </video>
+            {% elif video.thumb_url %}
+              <!-- スクレイプ動画は従来のサムネイル -->
+              <img
+                src="{{ video.thumb_url }}"
+                alt="{{ video.alt_text }}"
+                class="img-fluid rounded"
+                style="width:100%; height:auto;"
+              >
+            {% else %}
+              <!-- どちらもなければプレースホルダー -->
+              <div class="bg-secondary text-center text-light py-5 rounded">
+                No Preview
+              </div>
+            {% endif %}
           </a>
-          <img src="https://matching-affi.jp/data.php?i=phzgmua7t6sd&m=mhylbfa7216n" width="1" height="1" />
         </div>
-      {% else %}
-        <!-- 動画情報の表示 -->
-        <div class="col">
-          <div class="card h-100">
-            <a href="{% url 'video_detail' video.disp_id %}">
-              <img src="{{ video.thumb_url }}" class="card-img-top" alt="{{ video.alt_text }}" onerror="this.style.display='none';">
-            </a>
-          </div>
-        </div>
-      {% endif %}
+      </div>
     {% empty %}
       <p>動画が見つかりませんでした。</p>
     {% endfor %}

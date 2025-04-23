@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}動画アップロード{% endblock %}
+
+{% block extra_head %}
+  <style>
+    /* テキスト入力・textarea の背景と文字色 */
+    .upload-form .form-control {
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      border: 1px solid #444;
+    }
+    .upload-form .form-control:focus {
+      background-color: #333;
+      color: #fff;
+      border-color: #666;
+      box-shadow: none;
+    }
+
+    /* ファイル選択ボタン（Chrome/Edge/Firefox 共通） */
+    .upload-form input[type="file"] {
+      color: #e0e0e0;                  /* 選択されたファイル名の色 */
+    }
+    .upload-form input[type="file"]::file-selector-button {
+      background-color: #444;         /* ボタン背景 */
+      color: #e0e0e0;                 /* ボタン文字色 */
+      border: 1px solid #555;
+      border-radius: .25rem;
+      padding: .375rem .75rem;
+      margin-right: .5rem;
+      cursor: pointer;
+    }
+    .upload-form input[type="file"]::file-selector-button:hover {
+      background-color: #555;
+      border-color: #666;
+    }
+
+    /* 書き込みスペース（textarea）の背景を完全に黒に */
+    .upload-form textarea.form-control {
+      background-color: #000 !important;
+      color: #e0e0e0 !important;
+      border: 1px solid #444 !important;
+    }
+    .upload-form textarea.form-control:focus {
+      background-color: #111 !important;
+      border-color: #666 !important;
+      box-shadow: none !important;
+    }
+
+    /* upload-form 内の全 textarea にマッチ */
+    .upload-form textarea {
+      background-color: #000 !important;
+      color: #e0e0e0 !important;
+      border: 1px solid #444 !important;
+    }
+    .upload-form textarea:focus {
+      background-color: #111 !important;
+      border-color: #666 !important;
+      box-shadow: none !important;
+    }
+
+    /* ボタン以外の余白やカード背景はそのまま */
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="card mx-auto upload-form" style="max-width:600px;">
+    <div class="card-body">
+      <h5 class="card-title text-light">動画をアップロード</h5>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          {{ form.uploaded_file.label_tag }}
+          {{ form.uploaded_file }}  {# ここに上の file-input スタイルが効きます #}
+          {% if form.uploaded_file.errors %}
+            <div class="text-danger">{{ form.uploaded_file.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
+          {{ form.alt_text.label_tag }}
+          {{ form.alt_text }}       {# textarea もダークになります #}
+          {% if form.alt_text.errors %}
+            <div class="text-danger">{{ form.alt_text.errors }}</div>
+          {% endif %}
+        </div>
+
+        <button class="btn btn-outline-light" type="submit">アップロード</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

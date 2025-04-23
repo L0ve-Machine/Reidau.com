@@ -23,14 +23,9 @@
   {% endif %}
 
   {% if video_url %}
-    <div class="mb-3">
-      <a href="{{ video_url }}" download class="btn btn-success">
-        ↓ このリンクを長押し or 右クリックで保存 ↓
-      </a>
-    </div>
-    <video controls class="img-fluid rounded">
-      <source src="{{ video_url }}" type="video/mp4">
-      お使いのブラウザでは動画タグがサポートされていません。
-    </video>
+  <a href="{% url 'download' %}?url={{ video_url|urlencode }}"
+     class="btn btn-success">
+    ↓ 保存 ↓
+  </a>
   {% endif %}
 {% endblock %}

@@ -1,11 +1,16 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 from .models import Video
+from .forms import VideoUploadForm
 from django.db.models import Q
 from django.contrib.admin.views.decorators import staff_member_required
-
+from django.contrib import messages
 import yt_dlp
+from .utils import generate_unique_disp_id
+from django.http import StreamingHttpResponse, HttpResponseBadRequest
+import requests
+
 
 
 def video_list(request):
@@ -155,6 +160,38 @@ def video_ranking(request):
         'ranking': ranking,
         'current_period': period,
     })
+
+def upload_view(request):
+    if request.method == 'POST':
+        form = VideoUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            video = form.save(commit=False)
+            video.disp_id = generate_unique_disp_id()  # ここでユニークIDを取得
+            video.user    = request.user.username if request.user.is_authenticated else 'anonymous'
+            video.save()
+            messages.success(request, "アップロードが完了しました。")
+            return redirect('video_detail', disp_id=video.disp_id)
+    else:
+        form = VideoUploadForm()
+
+    return render(request, 'scraper/upload.html', {'form': form})
+
+
+def download_view(request):
+    video_url = request.GET.get("url")
+    if not video_url:
+        return HttpResponseBadRequest("動画 URL が指定されていません。")
+
+    resp = requests.get(video_url, stream=True)
+    if resp.status_code != 200:
+        return HttpResponseBadRequest("動画を取得できませんでした。")
+
+    response = StreamingHttpResponse(
+        resp.iter_content(chunk_size=8192),
+        content_type=resp.headers.get("Content-Type", "application/octet-stream")
+    )
+    response["Content-Disposition"] = 'attachment; filename="twitter_video.mp4"'
+    return response
 
 @staff_member_required
 def admin_video_list(request):

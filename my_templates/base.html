@@ -92,41 +92,43 @@
 
   <!-- ナビバー -->
   <nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'video_list' %}">Reidau.com</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-              data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-              aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'video_list' %}">Reidau.com</a>
+    <button class="navbar-toggler" …>
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'save' %}">保存</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'video_ranking' %}">ランキング</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'video_list' %}">リアルタイム</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link"
-               href="https://go.rmhfrtnd.com?campaignId=text&amp;sourceId=twidouga&amp;userId=987e43de0bda071fd24c1d23eea8346fabb58df5a40d63753450f9a2755ce68f"
-               target="_blank" rel="noopener noreferrer">
-              アダルトチャット
-            </a>
-          </li>
-        </ul>
-        <form class="d-flex" method="get" action="{% url 'video_list' %}">
-          <input class="form-control me-2" type="search" placeholder="検索"
-                 aria-label="Search" name="q">
-          <button class="btn btn-outline-light" type="submit">検索</button>
-        </form>
-      </div>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <!-- 既存の「保存」 -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'save' %}">保存</a>
+        </li>
+
+        <!-- ここに「アップロード」を追加 -->
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'upload' %}">アップロード</a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'video_ranking' %}">ランキング</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'video_list' %}">リアルタイム</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link"
+             href="https://……"
+             target="_blank" rel="noopener noreferrer">
+            アダルトチャット
+          </a>
+        </li>
+      </ul>
+      …
     </div>
-  </nav>
+  </div>
+</nav>
+
 
   <!-- メインコンテンツ -->
   <main class="flex-grow-1 container my-4">

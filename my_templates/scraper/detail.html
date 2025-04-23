@@ -16,12 +16,20 @@
   <h2 class="mb-3">Click the link below to view the video:</h2>
   <p style="word-break:break-word;">
     <strong>
-      <a href="{{ video.redirect_url }}" target="_blank">{{ video.redirect_url }}</a>
+      <a href="{{ video.redirect_url }}" target="_blank">
+        {{ video.redirect_url }}
+      </a>
     </strong>
   </p>
-  <p class="text-muted" style="font-size:x-small; word-break:break-word;">
-    <a href="{{ video.thumb_url }}" target="_blank">{{ video.thumb_url }}</a>
+
+  <h3 class="mt-4">Original Video Source</h3>
+  <p style="word-break:break-word;">
+    <a href="{{ video.tweet_url }}" target="_blank">
+      {{ video.tweet_url }}
+    </a>
   </p>
+
+
 
   <!-- 下部広告：マッチングアフィ -->
   <div class="text-center my-4">

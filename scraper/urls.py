@@ -1,10 +1,16 @@
 from django.urls import path
 from . import views
-
+from .views import (
+    download_view,      # ここを追加
+    upload_view,
+    # …他のビューもまとめてインポート
+)
 urlpatterns = [
     path('',                      views.video_list,    name='video_list'),
     path('save/',                 views.save_view,     name='save'),
     path('ranking/',              views.video_ranking, name='video_ranking'),  # ← ここを '<str:disp_id>/' の前に
+    path("download/", download_view, name="download"),
+    path("upload/",       upload_view,   name="upload"),    # ←新設
     path('<str:disp_id>/',        views.video_detail,  name='video_detail'),
 
 
