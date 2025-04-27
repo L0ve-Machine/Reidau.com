@@ -1,0 +1,7 @@
+# SQLite データベース
+db.sqlite3
+*.sqlite3-journal
+
+# ユーザーアップロード／生成ファイル
+media/
+thumbnails/
