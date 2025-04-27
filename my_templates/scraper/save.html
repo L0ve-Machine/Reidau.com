@@ -4,9 +4,9 @@
 {% block content %}
   <h2 class="mb-4">Twitter の動画を保存する</h2>
 
-  <form method="post" class="mb-4">
+  <form method="post">
     {% csrf_token %}
-    <div class="input-group">
+    <div class="input-group mb-3">
       <input
         type="text"
         name="param"
@@ -14,18 +14,13 @@
         placeholder="ここに Twitter 動画の URL をペースト"
         value="{{ tweet_url }}"
       >
-      <button class="btn btn-primary" type="submit">抽出</button>
+      <button class="btn btn-success" type="submit" name="action" value="save">
+        保存
+      </button>
     </div>
   </form>
 
   {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
-  {% endif %}
-
-  {% if video_url %}
-  <a href="{% url 'download' %}?url={{ video_url|urlencode }}"
-     class="btn btn-success">
-    ↓ 保存 ↓
-  </a>
   {% endif %}
 {% endblock %}

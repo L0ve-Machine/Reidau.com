@@ -1,38 +1,65 @@
 {% extends "scraper/../base.html" %}
-
 {% block title %}動画一覧{% endblock %}
 
 {% block content %}
   <div class="row row-cols-2 row-cols-md-3 g-4">
-    {% for video in videos %}
-      <div class="col">
-        <div class="listn" id="{{ video.disp_id }}">
-          <a href="{% url 'video_detail' video.disp_id %}">
-            {% if video.uploaded_file %}
-              <!-- アップロード動画は <video> タグで再生 -->
-              <video controls class="img-fluid rounded" style="width:100%; height:auto;">
-                <source src="{{ video.uploaded_file.url }}" type="video/mp4">
-                お使いのブラウザは video タグに対応していません。
-              </video>
-            {% elif video.thumb_url %}
-              <!-- スクレイプ動画は従来のサムネイル -->
-              <img
-                src="{{ video.thumb_url }}"
-                alt="{{ video.alt_text }}"
-                class="img-fluid rounded"
-                style="width:100%; height:auto;"
-              >
-            {% else %}
-              <!-- どちらもなければプレースホルダー -->
-              <div class="bg-secondary text-center text-light py-5 rounded">
-                No Preview
-              </div>
-            {% endif %}
-          </a>
+    {% for item in videos %}
+      {% if item.ad %}
+        <div class="col">
+          <div class="bg-warning text-dark text-center py-5 rounded">
+            {{ item.ad_content }}
+          </div>
         </div>
-      </div>
+      {% else %}
+        <div class="col">
+          <div class="listn" id="{{ item.disp_id }}">
+            <a href="{% url 'video_detail' item.disp_id %}">
+              {# ① まず thumb_url があればサムネ画像を表示 #}
+              {% if item.thumb_url %}
+                <img
+                  src="{{ item.thumb_url }}"
+                  alt="{{ item.alt_text }}"
+                  class="img-fluid rounded"
+                  style="width:100%; height:auto;"
+                >
+              {# ② thumb_url がなければアップロード動画を表示 #}
+              {% elif item.uploaded_file %}
+                <video controls class="img-fluid rounded" style="width:100%; height:auto;">
+                  <source src="{{ item.uploaded_file.url }}" type="video/mp4">
+                  お使いのブラウザは video タグに対応していません。
+                </video>
+              {% else %}
+                <div class="bg-secondary text-center text-light py-5 rounded">
+                  No Preview
+                </div>
+              {% endif %}
+            </a>
+          </div>
+        </div>
+      {% endif %}
     {% empty %}
       <p>動画が見つかりませんでした。</p>
     {% endfor %}
+  </div>
+
+  <!-- ページ遷移ボタン -->
+  <div class="d-flex justify-content-center my-4">
+    {% if page_obj.has_previous %}
+      <a href="?q={{ q }}&page={{ page_obj.previous_page_number }}"
+         class="btn btn-outline-light me-2">&laquo; 前へ</a>
+    {% else %}
+      <button class="btn btn-outline-secondary me-2" disabled>&laquo; 前へ</button>
+    {% endif %}
+
+    <span class="align-self-center mx-2">
+      {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+    </span>
+
+    {% if page_obj.has_next %}
+      <a href="?q={{ q }}&page={{ page_obj.next_page_number }}"
+         class="btn btn-outline-light ms-2">次へ &raquo;</a>
+    {% else %}
+      <button class="btn btn-outline-secondary ms-2" disabled>次へ &raquo;</button>
+    {% endif %}
   </div>
 {% endblock %}
