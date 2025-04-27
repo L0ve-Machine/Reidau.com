@@ -1,30 +1,4 @@
- # requirements.txt
-
- # Django and ecosystem
- Django
- django-crontab
- django-allauth
- djangorestframework
- django-cors-headers
- django-tailwind
- whitenoise
-
- # Scraping & parsing
- requests
- beautifulsoup4
- yt-dlp
-
- # Configuration
- python-dotenv
- # Utilities (loose pins, latest allowed)
- accelerate
- aioquic
- numpy
- pandas
- psycopg2-binary
- gunicorn
-
- # Add other dependencies here as needed without strict version pinsaccelerate==1.3.0
+accelerate==1.3.0
 aioquic==1.2.0
 annotated-types==0.7.0
 anyio==4.8.0
