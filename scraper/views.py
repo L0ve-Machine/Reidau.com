@@ -90,10 +90,10 @@ def save_view(request):
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(tweet_url, download=False)
-            formats = sorted(info.get("formats", []), key=lambda f: f.get("height", 0))
+            formats = sorted(info.get("formats", []), key=lambda f: f.get("height", 0) or 0)
             video_url = formats[-1]["url"] if formats else info.get("url")
         except Exception as e:
-            logger.exception("yt_dlp での情報抽出に失敗しました")
+            logger.exception("動画 URL の抽出に失敗しました")
             error = "動画の抽出に失敗しました。URL を確認してください。"
             return render(request, "scraper/save.html", {"tweet_url": tweet_url, "error": error})
 
@@ -120,8 +120,8 @@ def save_view(request):
             video = Video(
                 disp_id=disp_id,
                 user=user,
-                redirect_url=tweet_url,
-                tweet_url=tweet_url,
+                redirect_url=tweet_url,     # 元のツイートURL
+                tweet_url=video_url,        # 抽出した動画URLを保存
                 alt_text="",
             )
 
@@ -133,7 +133,7 @@ def save_view(request):
                 logger.exception("動画ファイルの保存に失敗しました")
                 raise
 
-            # 5) サムネイル生成 (ffmpeg を利用、-y で既存ファイルを強制上書き)
+            # 5) サムネイル生成 (-y オプションで上書き)
             try:
                 today = timezone.now().strftime("%Y/%m/%d")
                 thumb_dir = os.path.join("thumbnails", today)
