@@ -21,8 +21,13 @@ import logging
 import tempfile
 from django.db import transaction
 import subprocess
+from urllib.parse import urlparse, urlunparse
+from django.conf import settings
+from .twidropper import fetch_from_twidropper
+from pathlib import Path
 
 
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 logger = logging.getLogger(__name__)
 def video_list(request):
     q = request.GET.get('q', '').strip()
@@ -71,48 +76,76 @@ def video_detail(request, disp_id):
     return render(request, 'scraper/detail.html', {'video': video})
 
 
+def normalize_twitter_url(url: str) -> str:
+    """x.com / mobile.twitter.com → twitter.com に置き換え"""
+    p = urlparse(url)
+    host = p.netloc.lower()
+    if host.endswith(("x.com", "mobile.twitter.com")):
+        p = p._replace(netloc="twitter.com")
+    return urlunparse(p)
+
+def _download_with_ytdlp(url: str, cookie_path: Path | None) -> str:
+    """
+    url を mp4 にダウンロードし、実ファイルのパスを返す。
+    20 KB 未満なら失敗として ValueError。
+    """
+    tmp_base = Path(tempfile.NamedTemporaryFile(delete=False).name)  # 拡張子無し
+    outtmpl  = f"{tmp_base}.%(ext)s"                                 # 拡張子は yt-dlp
+
+    ydl_opts = {
+        "quiet": True,
+        "outtmpl": outtmpl,
+        "merge_output_format": "mp4",
+        "http_headers": {"User-Agent": UA},
+    }
+    if cookie_path:
+        ydl_opts["cookiefile"] = str(cookie_path)
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    # 実ファイル検出
+    for ext in (".mp4", ".mkv", ".webm"):
+        f = tmp_base.with_suffix(ext)
+        if f.exists() and f.stat().st_size > 20 * 1024:   # 20 KB 以上
+            return str(f)
+    raise ValueError("yt-dlp の出力ファイルが見つからないか極端に小さい")
+
 def save_view(request):
-    tweet_url = ""
-    error = None
+    tweet_url, error = "", None
 
     if request.method == "POST" and request.POST.get("action") == "save":
         tweet_url = request.POST.get("param", "").strip()
         if not tweet_url:
-            error = "URL を入力してください。"
-            return render(request, "scraper/save.html", {"tweet_url": tweet_url, "error": error})
+            return render(request, "scraper/save.html",
+                          {"tweet_url": tweet_url, "error": "URL を入力してください。"})
 
-        # 1) yt_dlp で MP4 形式の動画 URL を取得
+        tweet_url = normalize_twitter_url(tweet_url)
+        cookie_path = settings.COOKIES_FILE if settings.COOKIES_FILE.exists() else None
+
+        # ① ツイート URL を直接 yt-dlp で DL
         try:
-            ydl_opts = {
-                "quiet": True,
-                "skip_download": True,
-                "format": "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-            }
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(tweet_url, download=False)
-            formats = sorted(info.get("formats", []), key=lambda f: f.get("height", 0) or 0)
-            video_url = formats[-1]["url"] if formats else info.get("url")
+            tmp_path  = _download_with_ytdlp(tweet_url, cookie_path)
+            video_src = tweet_url
         except Exception as e:
-            logger.exception("動画 URL の抽出に失敗しました")
-            error = "動画の抽出に失敗しました。URL を確認してください。"
-            return render(request, "scraper/save.html", {"tweet_url": tweet_url, "error": error})
+            logger.info(f"yt-dlp direct failed: {e}")
+            tmp_path  = None
 
-        # 2) ストリームを一時ファイルに保存
-        try:
-            resp = requests.get(video_url, stream=True)
-            resp.raise_for_status()
+        # ② フォールバック: Twidropper → yt-dlp DL
+        if tmp_path is None:
+            video_src = fetch_from_twidropper(tweet_url)
+            if not video_src:
+                return render(request, "scraper/save.html",
+                              {"tweet_url": tweet_url, "error": "動画の抽出に失敗しました。"})
+            try:
+                tmp_path = _download_with_ytdlp(video_src, None)   # 公開ツイのみ
+            except Exception as e:
+                logger.exception("動画のダウンロードに失敗しました")
+                return render(request, "scraper/save.html",
+                              {"tweet_url": tweet_url,
+                               "error": f"動画のダウンロードに失敗しました: {e}"})
 
-            tmp_video = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-            for chunk in resp.iter_content(chunk_size=8192):
-                tmp_video.write(chunk)
-            tmp_video.flush()
-            tmp_video.close()
-        except Exception as e:
-            logger.exception("動画のダウンロードに失敗しました")
-            error = f"動画のダウンロードに失敗しました: {e}"
-            return render(request, "scraper/save.html", {"tweet_url": tweet_url, "error": error})
-
-        # 3) DB とファイル保存をトランザクション内で実行
+        # ③ DB 保存 + サムネイル生成
         with transaction.atomic():
             disp_id = generate_unique_disp_id()
             user = request.user.username if request.user.is_authenticated else "anonymous"
@@ -120,56 +153,44 @@ def save_view(request):
             video = Video(
                 disp_id=disp_id,
                 user=user,
-                redirect_url=tweet_url,     # 元のツイートURL
-                tweet_url=video_url,        # 抽出した動画URLを保存
+                redirect_url=tweet_url,
+                tweet_url=video_src,
                 alt_text="",
             )
+            with open(tmp_path, "rb") as f:
+                video.uploaded_file.save(f"{disp_id}.mp4", f, save=False)
 
-            # 4) 一時動画ファイルを Video.uploaded_file に保存
-            try:
-                with open(tmp_video.name, 'rb') as f:
-                    video.uploaded_file.save(f"{disp_id}.mp4", f, save=False)
-            except Exception:
-                logger.exception("動画ファイルの保存に失敗しました")
-                raise
-
-            # 5) サムネイル生成 (-y オプションで上書き)
+            # サムネイル
             try:
                 today = timezone.now().strftime("%Y/%m/%d")
                 thumb_dir = os.path.join("thumbnails", today)
-                if hasattr(default_storage, 'makedirs'):
+                if hasattr(default_storage, "makedirs"):
                     default_storage.makedirs(thumb_dir)
-                thumb_name = f"{disp_id}_thumb.jpg"
                 thumb_tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False).name
-
                 subprocess.run([
-                    "ffmpeg", "-y", "-i", tmp_video.name,
-                    "-vf", "thumbnail,scale=320:-1", "-frames:v", "1",
-                    thumb_tmp
-                ], check=True)
-
-                with open(thumb_tmp, 'rb') as imgf:
-                    thumb_path = os.path.join(thumb_dir, thumb_name)
+                    "ffmpeg", "-y", "-i", tmp_path,
+                    "-vf", "thumbnail,scale=320:-1", "-frames:v", "1", thumb_tmp],
+                    check=True)
+                with open(thumb_tmp, "rb") as imgf:
+                    thumb_path = os.path.join(thumb_dir, f"{disp_id}_thumb.jpg")
                     default_storage.save(thumb_path, ContentFile(imgf.read()))
                     video.thumb_url = default_storage.url(thumb_path)
             except Exception as e:
                 logger.warning(f"サムネイル生成に失敗しました: {e}")
 
-            # 6) レコード保存
             video.save()
 
         messages.success(request, "動画を DB に保存しました。")
 
-        # 7) 端末ダウンロード
-        response = StreamingHttpResponse(
-            open(tmp_video.name, 'rb'),
-            content_type=resp.headers.get("Content-Type", "application/octet-stream")
+        return StreamingHttpResponse(
+            open(tmp_path, "rb"),
+            content_type="video/mp4",
+            headers={"Content-Disposition": f'attachment; filename=\"{disp_id}.mp4\"'}
         )
-        response["Content-Disposition"] = f'attachment; filename="{disp_id}.mp4"'
-        return response
 
-    # GET またはエラー時はフォーム表示
-    return render(request, "scraper/save.html", {"tweet_url": tweet_url, "error": error})
+    # GET またはエラー時
+    return render(request, "scraper/save.html",
+                  {"tweet_url": tweet_url, "error": error})
 
 
 

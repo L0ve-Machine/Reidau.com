@@ -5,7 +5,7 @@
 <div class="container py-4">
   <h1>ランキング</h1>
 
-  <!-- タブメニュー -->
+  <!-- 期間切替タブ -->
   <ul class="nav nav-tabs mb-4">
     <li class="nav-item">
       <a class="nav-link {% if current_period == '24h' %}active{% endif %}"
@@ -33,25 +33,27 @@
     </li>
   </ul>
 
-  <!-- 統一したカード表示 -->
+  <!-- ランキング一覧 -->
   <div class="row row-cols-2 row-cols-md-3 g-4">
     {% for video in ranking %}
       <div class="col">
         <div class="listn" id="{{ video.disp_id }}">
           <a href="{% url 'video_detail' video.disp_id %}">
-            {% if video.uploaded_file %}
-              <video controls class="img-fluid rounded" style="width:100%; height:auto;">
-                <source src="{{ video.uploaded_file.url }}" type="video/mp4">
-                お使いのブラウザは video タグに対応していません。
-              </video>
-            {% elif video.thumb_url %}
+            {# ① サムネ画像があれば最優先で表示 #}
+            {% if video.thumb_url %}
               <img
                 src="{{ video.thumb_url }}"
                 alt="{{ video.alt_text }}"
                 class="img-fluid rounded"
                 style="width:100%; height:auto;"
-                onerror="this.style.display='none';"
               >
+            {# ② サムネが無ければアップロード動画を表示 #}
+            {% elif video.uploaded_file %}
+              <video controls class="img-fluid rounded" style="width:100%; height:auto;">
+                <source src="{{ video.uploaded_file.url }}" type="video/mp4">
+                お使いのブラウザは video タグに対応していません。
+              </video>
+            {# ③ どちらも無ければダミー枠 #}
             {% else %}
               <div class="bg-secondary text-center text-light py-5 rounded">
                 No Preview
@@ -65,7 +67,7 @@
     {% endfor %}
   </div>
 
-  <!-- ページ遷移ボタン -->
+  <!-- ページネーション -->
   <div class="d-flex justify-content-center my-4">
     {% if page_obj.has_previous %}
       <a href="?period={{ current_period }}&page={{ page_obj.previous_page_number }}"
@@ -73,9 +75,7 @@
         &laquo; 前へ
       </a>
     {% else %}
-      <button class="btn btn-outline-secondary me-2" disabled>
-        &laquo; 前へ
-      </button>
+      <button class="btn btn-outline-secondary me-2" disabled>&laquo; 前へ</button>
     {% endif %}
 
     <span class="align-self-center mx-2">
@@ -88,9 +88,7 @@
         次へ &raquo;
       </a>
     {% else %}
-      <button class="btn btn-outline-secondary ms-2" disabled>
-        次へ &raquo;
-      </button>
+      <button class="btn btn-outline-secondary ms-2" disabled>次へ &raquo;</button>
     {% endif %}
   </div>
 </div>
